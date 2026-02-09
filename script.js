@@ -1,33 +1,32 @@
-// Pong Game Logic
-
-// Canvas and context
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
+let canvas = document.getElementById("gameCanvas");
+let ctx = canvas.getContext("2d");
 
 // Game variables
 let ballRadius = 10;
 let x = canvas.width / 2;
 let y = canvas.height / 2;
-let dx = 2; // Ball speed in x
-let dy = -2; // Ball speed in y
+let dx = 2; // Ball speed
+let dy = 2;
 let paddleHeight = 75;
 let paddleWidth = 10;
 let playerPaddleY = (canvas.height - paddleHeight) / 2;
 let aiPaddleY = (canvas.height - paddleHeight) / 2;
 let playerScore = 0;
 let aiScore = 0;
-const paddleSpeed = 4;
 
-// Controls
-document.addEventListener('mousemove', (e) => {
-    const mouseY = e.clientY - canvas.getBoundingClientRect().top;
-    playerPaddleY = mouseY - paddleHeight / 2;
-});
+document.addEventListener("mousemove", mouseMoveHandler, false);
+
+function mouseMoveHandler(e) {
+    let relativeY = e.clientY - canvas.getBoundingClientRect().top;
+    if (relativeY > 0 && relativeY < canvas.height) {
+        playerPaddleY = relativeY - paddleHeight / 2;
+    }
+}
 
 function drawBall() {
     ctx.beginPath();
     ctx.arc(x, y, ballRadius, 0, Math.PI * 2);
-    ctx.fillStyle = '#0095DD';
+    ctx.fillStyle = "#0095DD";
     ctx.fill();
     ctx.closePath();
 }
@@ -35,59 +34,52 @@ function drawBall() {
 function drawPaddle(x, y) {
     ctx.beginPath();
     ctx.rect(x, y, paddleWidth, paddleHeight);
-    ctx.fillStyle = '#0095DD';
+    ctx.fillStyle = "#0095DD";
     ctx.fill();
     ctx.closePath();
 }
 
-function drawScoreboard() {
-    ctx.font = '16px Arial';
-    ctx.fillStyle = '#0095DD';
-    ctx.fillText(`Player: ${playerScore}`, 8, 20);
-    ctx.fillText(`AI: ${aiScore}`, canvas.width - 50, 20);
+function drawScore() {
+    ctx.font = "16px Arial";
+    ctx.fillStyle = "#0095DD";
+    ctx.fillText("Player: " + playerScore, 8, 20);
+    ctx.fillText("AI: " + aiScore, canvas.width - 50, 20);
 }
 
 function collisionDetection() {
-    // Ball collision with paddles
-    if (x + ballRadius > canvas.width - paddleWidth && y > aiPaddleY && y < aiPaddleY + paddleHeight) {
-        dx = -dx;
-    } else if (x - ballRadius < paddleWidth && y > playerPaddleY && y < playerPaddleY + paddleHeight) {
-        dx = -dx;
-    }
-
-    // Ball collision with top and bottom walls
-    if (y + ballRadius > canvas.height || y - ballRadius < 0) {
+    if (y + dy > canvas.height - ballRadius || y + dy < ballRadius) {
         dy = -dy;
     }
-
-    // Ball goes out of bounds
-    if (x + ballRadius > canvas.width) {
-        playerScore++;
-        resetBall();
-    } else if (x - ballRadius < 0) {
-        aiScore++;
-        resetBall();
+    
+    if (x + dx < paddleWidth) {
+        if (y > playerPaddleY && y < playerPaddleY + paddleHeight) {
+            dx = -dx;
+        } else if (x + dx < 0) {
+            aiScore++;
+            resetBall();
+        }
+    } else if (x + dx > canvas.width - ballRadius - paddleWidth) {
+        if (y > aiPaddleY && y < aiPaddleY + paddleHeight) {
+            dx = -dx;
+        } else if (x + dx > canvas.width) {
+            playerScore++;
+            resetBall();
+        }
     }
 }
 
 function resetBall() {
     x = canvas.width / 2;
     y = canvas.height / 2;
-    dx = 2;
-    dy = -2;
+    dx = -dx; // Change direction
 }
 
 function aiMovement() {
-    // Simple AI follows the ball
-    if (y < aiPaddleY + paddleHeight / 2) {
-        aiPaddleY -= paddleSpeed;
+    if (aiPaddleY + paddleHeight / 2 < y) {
+        aiPaddleY += 4; // AI speed
     } else {
-        aiPaddleY += paddleSpeed;
+        aiPaddleY -= 4;
     }
-
-    // Keep AI paddle within canvas
-    if (aiPaddleY < 0) aiPaddleY = 0;
-    if (aiPaddleY > canvas.height - paddleHeight) aiPaddleY = canvas.height - paddleHeight;
 }
 
 function draw() {
@@ -95,11 +87,15 @@ function draw() {
     drawBall();
     drawPaddle(0, playerPaddleY);
     drawPaddle(canvas.width - paddleWidth, aiPaddleY);
-    drawScoreboard();
+    drawScore();
     collisionDetection();
-    aiMovement();
+    
     x += dx;
     y += dy;
+    aiMovement();
+
+    requestAnimationFrame(draw);
 }
 
-setInterval(draw, 10);
+// Start the game loop
+draw();
